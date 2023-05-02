@@ -3,14 +3,16 @@ import axios from 'axios';
 
 import { defaultPrompt, multipleChoiceAnswer, askQuestion } from './prompts';
 
+import loadingGif from './loading.gif';
+
 interface ResponseBase {
   summary: string[];
   questionType: string;
-  question: string;
 }
 
 interface MultipleChoiceResponse extends ResponseBase {
-  options: string[];
+  trueStatement: string;
+  falseStatements: string[];
 }
 
 type QuestionResponse = MultipleChoiceResponse;
@@ -23,6 +25,7 @@ interface EvaluationResponse extends ResponseBase {
 const Article: React.FC = () => {
   const [inputText, setInputText] = useState<string>('');
   const [conversation, setConversation] = useState<ReactElement[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     sendPromptAndProcessResponse();
@@ -42,40 +45,57 @@ const Article: React.FC = () => {
   };
 
   const processResponse = (response: QuestionResponse) => {
-    const { summary, questionType, question, options } = response;
-
-    const summaryList = summary.map((point, index) => <li key={index}>{point}</li>);
+    const { summary, questionType, trueStatement, falseStatements } = response;
+  
+    const summaryList = summary ? summary.map((point, index) => <li key={index}>{point}</li>) : <></>;
     console.log(summary + "");
-    const optionsList = questionType === 'multiple' && options.map((option, index) => (
-        <li key={index}>
-          <button onClick={() => evaluateMultipleChoiceAnswer(option, question, summary + "")}>{option}</button>
-        </li>
-      ));
+  
+    // Combine trueStatement and falseStatements
+    const allStatements = [trueStatement, ...falseStatements];
+  
+    // Fisher-Yates shuffle algorithm
+    const shuffleArray = (array: any[]) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    };
+  
+    shuffleArray(allStatements);
+  
+    const optionsList = questionType === 'multiple' && allStatements.map((statement, index) => (
+      <li key={index}>
+        <button onClick={() => evaluateMultipleChoiceAnswer(statement, statement === trueStatement, summary + "")}>{statement}</button>
+      </li>
+    ));
   
     return (
       <>
         <ul>{summaryList}</ul>
-        <p>{question}</p>
+        <p>Select the true statement:</p>
         {questionType === 'multiple' && <ol type="a">{optionsList}</ol>}
       </>
     );
+  };
+
+  const evaluateMultipleChoiceAnswer = async (answer: string, isCorrect: boolean, summary: string) => {
+    let evaluationText = <></>;
+    if (isCorrect) {
+        evaluationText = <><hr/><p>{answer}: <span style={{"color":"green"}}> Correct</span></p><hr/></>;
+    } else {
+        const response = await makeEvaluationPrompt(answer, false);
+        const { reason } = response;
+        evaluationText = 
+            <><hr/><p>{answer}: 
+                <span style={{"color":"red"}}> Incorrect</span>
+            </p><p>{reason}</p><hr/></>;
+    }
+    setConversation(prevConversation => [...prevConversation, evaluationText]);
+    if (!isCorrect) requestQuestion(summary);
   }
 
-  const evaluateMultipleChoiceAnswer = async (answer: string, question: string, summary: string) => {
-    const response = await makeEvaluationPrompt(answer, question);
-    const { evaluation, reason } = response;
-    const processedResponse = 
-        <><hr/><p>{answer}: 
-            {evaluation === 'Correct' ? 
-                <span style={{"color":"green"}}> Correct</span> : 
-                <span style={{"color":"red"}}> Incorrect</span>}
-        </p><p>{reason}</p><hr/></>;
-    setConversation(prevConversation => [...prevConversation, processedResponse]);
-    if (evaluation === 'Incorrect') requestQuestion(summary);
-  }
-
-  const makeEvaluationPrompt = (answer: string, question: string) => {
-    return requestEvaluation(multipleChoiceAnswer(answer, question));
+  const makeEvaluationPrompt = (answer: string, isCorrect: boolean) => {
+    return requestEvaluation(multipleChoiceAnswer(answer, isCorrect));
   };
 
   const requestQuestion = (text: string) => {
@@ -103,6 +123,7 @@ const Article: React.FC = () => {
 
   const sendToOpenAI = async (prompt: string): Promise<string> => {
     console.log("prompt", prompt);
+    setIsLoading(true);
     try {
       const response = await axios.post('https://api.openai.com/v1/chat/completions', {
         messages: [{"role": "user","content":prompt}],
@@ -120,9 +141,11 @@ const Article: React.FC = () => {
   
       const messageJSON = response.data.choices[0].message.content.trim();
       console.log(messageJSON);
+      setIsLoading(false);
       return messageJSON;
     } catch (error) {
       console.error('Error in API request:', error);
+      setIsLoading(false);
       return "";
     }
   };
@@ -133,6 +156,7 @@ const Article: React.FC = () => {
         {conversation.map((line, index) => (
           <React.Fragment key={index}>{line}</React.Fragment>
         ))}
+        {isLoading && <img src={loadingGif} alt="Loading..." />}
       </div>
       <textarea
         required
