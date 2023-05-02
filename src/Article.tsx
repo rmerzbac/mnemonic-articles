@@ -1,13 +1,23 @@
 import React, { useState, useEffect, ChangeEvent, KeyboardEvent, ReactElement } from 'react';
 import axios from 'axios';
 
-import { defaultPrompt } from './prompts';
+import { defaultPrompt, multipleChoiceAnswer, askQuestion } from './prompts';
 
-interface Response {
+interface ResponseBase {
   summary: string[];
   questionType: string;
   question: string;
+}
+
+interface MultipleChoiceResponse extends ResponseBase {
   options: string[];
+}
+
+type QuestionResponse = MultipleChoiceResponse;
+
+interface EvaluationResponse extends ResponseBase {
+  evaluation: string;
+  reason: string;
 }
 
 const Article: React.FC = () => {
@@ -15,24 +25,32 @@ const Article: React.FC = () => {
   const [conversation, setConversation] = useState<ReactElement[]>([]);
 
   useEffect(() => {
-    const sendPromptAndProcessResponse = async () => {
-      console.log("Updating conversation");
-      const result = await makePrompt();
-      const processedResponse = processResponse(result);
-      setConversation(prevConversation => [...prevConversation, processedResponse]);
-    };
     sendPromptAndProcessResponse();
   }, []);
 
-  const makePrompt = () => {
-    return sendToOpenAI(defaultPrompt(), conversation);
+  const sendPromptAndProcessResponse = async (text: string | null = null) => {
+    console.log("Updating conversation");
+    const result = await makePrompt(text);
+    const message = JSON.parse(result);
+    const processedResponse = processResponse(message);
+    setConversation(prevConversation => [...prevConversation, processedResponse]);
   };
 
-  const processResponse = (response: Response) => {
+  const makePrompt = (text: string | null) => {
+    const prompt = text ?? defaultPrompt();
+    return sendToOpenAI(prompt);
+  };
+
+  const processResponse = (response: QuestionResponse) => {
     const { summary, questionType, question, options } = response;
-  
+
     const summaryList = summary.map((point, index) => <li key={index}>{point}</li>);
-    const optionsList = questionType === 'multiple' && options.map((option, index) => <li key={index}>{option}</li>);
+    console.log(summary + "");
+    const optionsList = questionType === 'multiple' && options.map((option, index) => (
+        <li key={index}>
+          <button onClick={() => evaluateMultipleChoiceAnswer(option, question, summary + "")}>{option}</button>
+        </li>
+      ));
   
     return (
       <>
@@ -41,7 +59,28 @@ const Article: React.FC = () => {
         {questionType === 'multiple' && <ol type="a">{optionsList}</ol>}
       </>
     );
-  }  
+  }
+
+  const evaluateMultipleChoiceAnswer = async (answer: string, question: string, summary: string) => {
+    const response = await makeEvaluationPrompt(answer, question);
+    const { evaluation, reason } = response;
+    const processedResponse = 
+        <><hr/><p>{answer}: 
+            {evaluation === 'Correct' ? 
+                <span style={{"color":"green"}}> Correct</span> : 
+                <span style={{"color":"red"}}> Incorrect</span>}
+        </p><p>{reason}</p><hr/></>;
+    setConversation(prevConversation => [...prevConversation, processedResponse]);
+    if (evaluation === 'Incorrect') requestQuestion(summary);
+  }
+
+  const makeEvaluationPrompt = (answer: string, question: string) => {
+    return requestEvaluation(multipleChoiceAnswer(answer, question));
+  };
+
+  const requestQuestion = (text: string) => {
+    return sendPromptAndProcessResponse(askQuestion(text));
+  };
 
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     setInputText(e.target.value);
@@ -55,11 +94,19 @@ const Article: React.FC = () => {
     }
   };
 
-  const sendToOpenAI = async (prompt: string, conversation: ReactElement[]): Promise<Response> => {
+  const requestEvaluation = async (prompt: string) : Promise<EvaluationResponse> => {
+    const response = await sendToOpenAI(prompt);
+    const message = JSON.parse(response);
+    console.log(message);
+    return message;
+  }
+
+  const sendToOpenAI = async (prompt: string): Promise<string> => {
+    console.log("prompt", prompt);
     try {
-      const response = await axios.post('https://api.openai.com/v1/completions', {
-        prompt: prompt,
-        model: "text-davinci-003",
+      const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        messages: [{"role": "user","content":prompt}],
+        model: "gpt-3.5-turbo",
         max_tokens: 300, // Set your desired response length
         n: 1,
         stop: null,
@@ -71,14 +118,12 @@ const Article: React.FC = () => {
         },
       });
   
-      const messageJSON = response.data.choices[0].text.trim();
+      const messageJSON = response.data.choices[0].message.content.trim();
       console.log(messageJSON);
-      const message = JSON.parse(messageJSON);
-      console.log(message);
-      return message;
+      return messageJSON;
     } catch (error) {
       console.error('Error in API request:', error);
-      return { summary: [], questionType: '', question: 'Error: Unable to process your request.', options: [] };
+      return "";
     }
   };
 

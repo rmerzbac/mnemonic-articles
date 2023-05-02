@@ -49,19 +49,38 @@ export function defaultPrompt(text = demoText) {
     // const randomNum = Math.floor(Math.random() * 3);
     
     // Add other options
-    return "Summarize this text thoroughly in bullet points, and write a multiple choice question about the topic that can be answered \
-        using only the summarized information.\n\
+    return "Summarize this text thoroughly in bullet points, and write a multiple choice question with one clearly correct answer and three clearly false answers. \
+    Please please please make sure one and only one option is true and the rest are clearly false.\
+    Do not include bullet point text (•, -, a, 1., etc.)\n\
         Respond in the form \
-        {\"summary\": [<your bullet points>], \
+        {\"summary\": [<\"your bullet points\">], \
         \"questionType\": \"multiple\", \
         \"question\":\"<your question>\", \
-        \"options\":[<your options>]}\n\n"
+        \"options\":[<\"your options\">]\
+        \"answer\":\"<the correct answer>\"}\n\n"
+        + text;
+}
+
+export function askQuestion(text = demoText) {
+    return multipleChoiceQuestion(text);
+}
+
+export function multipleChoiceQuestion(text: string) {
+    return "Write a multiple choice question about this text with one clearly correct answer and three clearly false answers. \
+    Please please please make sure one and only one option is true and the rest are clearly false.\
+    Do not include bullet point text (•, -, a, 1., etc.)\n\
+        Respond in the form \
+        {\"summary\": [<\"your bullet points\">], \
+        \"questionType\": \"multiple\", \
+        \"question\":\"<your question>\", \
+        \"options\":[<\"your options\">]\
+        \"answer\":\"<the correct answer>\"}\n\n"
         + text;
 }
 
 export function multipleChoiceAnswer(text: string, question: string) {
-    return "I answered \"" + text + "\" to the question \n\"" + question +"\". \
-    Is this correct? Respond in the form \
+    return "I answered \"" + text + "\" to the multiple-choice question \n\"" + question +"\". \
+    Is this correct or incorrect? Please only answer incorrect if it is clearly wrong. Respond in the form \
     {\"evaluation\": <\"Correct\"/\"Incorrect\">], \
         \"reason\": \"<reason>\"}";
 }
