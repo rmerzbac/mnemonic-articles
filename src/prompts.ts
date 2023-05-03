@@ -57,6 +57,11 @@ export function defaultPrompt(text = demoText) {
     \n\n" + text;
 }
 
+export const makePrompt = (text: string | null) => {
+    const prompt = text ?? defaultPrompt();
+    return prompt;
+};
+
 export function askQuestion(text = demoText) {
     return multipleChoiceQuestion(text);
 }
@@ -69,13 +74,15 @@ export function multipleChoiceQuestion(text: string) {
     \n\n" + text;
 }
 
-export function multipleChoiceAnswer(text: string, isCorrect: boolean) {
+export function multipleChoiceAnswer(text: string, isCorrect: boolean, context: string) {
     return isCorrect ? 
         "Why is " + text + " a true statement?\n\
         Respond in the form \n\
-        {\"reason\": \"<reason>\"}":
+        {\"reason\": \"<reason>\"} \n\n\
+        Here is the context:\n" + context:
         "Why is " + text + " not a true statement?\n\
         Respond in the form \n\
-        {\"reason\": \"<reason>\"}";
+        {\"reason\": \"<reason>\"} \n\n\
+        Here is the context:\n" + context;
 }
   
