@@ -1,5 +1,9 @@
 import axios from 'axios';
 
+const MODEL = "gpt-3.5-turbo";
+const MAX_TOKENS = 500;
+const TEMPERATURE = .3;
+
 export const sendToOpenAI = async (
   prompt: string,
   setIsLoading: (value: boolean) => void,
@@ -9,11 +13,11 @@ export const sendToOpenAI = async (
   try {
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
       messages: [{"role": "user", "content": prompt}],
-      model: "gpt-3.5-turbo",
-      max_tokens: 300,
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
       n: 1,
       stop: null,
-      temperature: .3,
+      temperature: TEMPERATURE,
     }, {
       headers: {
         'Content-Type': 'application/json',

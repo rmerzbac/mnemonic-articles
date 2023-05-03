@@ -1,36 +1,69 @@
-import React, { useState, useEffect, ChangeEvent, KeyboardEvent, ReactElement } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, KeyboardEvent, ReactElement } from 'react';
 
 import ArticlePresentation from './ArticlePresentation';
 import { sendToOpenAI } from './openAI';
 import { makePrompt, askQuestion, multipleChoiceAnswer } from './prompts';
 
+interface ArticleProps {
+    text: string;
+}
+
 interface ResponseBase {
-  summary: string[];
-  questionType: string;
+    summary: string[];
+    questionType: string;
 }
 
 interface MultipleChoiceResponse extends ResponseBase {
-  trueStatement: string;
-  falseStatements: string[];
+    trueStatement: string;
+    falseStatements: string[];
 }
 
 type QuestionResponse = MultipleChoiceResponse;
 
 interface EvaluationResponse extends ResponseBase {
-  evaluation: string;
-  reason: string;
+    evaluation: string;
+    reason: string;
 }
 
-const Article: React.FC = () => {
+const Article: React.FC<ArticleProps> = ({ text }) => {
+  const paragraphs = text.split('\n');
+
   const [inputText, setInputText] = useState<string>('');
   const [conversation, setConversation] = useState<ReactElement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const textPosition = useRef(0);
+  const [triggerReadText, setTriggerReadText] = useState(true);
+
+  const readText = () => {
+    console.log('text-pos-read-text', textPosition);
+    if (textPosition.current >= paragraphs.length) {
+        alert("Text over");
+        return "";
+    }
+
+    let charCount = 0;
+    let newPosition = textPosition.current;
+
+    while (charCount < 1000 && newPosition < paragraphs.length) {
+      charCount += paragraphs[newPosition].length;
+      newPosition += 1;
+    }
+
+    const newText = paragraphs.slice(textPosition.current, newPosition).join('\n');
+    textPosition.current = newPosition;
+    console.log("Updated textPosition:", newPosition); // Add this line
+    return newText;
+  };
 
   useEffect(() => {
-    sendPromptAndProcessResponse();
-  }, []);
+    console.log('text-pos', textPosition);
+    if (triggerReadText) {
+      sendPromptAndProcessResponse(readText());
+      setTriggerReadText(false);
+    }
+  }, [textPosition, triggerReadText]);
 
-  const sendPromptAndProcessResponse = async (text: string | null = null, context: string | null = null) => {
+  const sendPromptAndProcessResponse = async (text: string, context: string | null = null) => {
     console.log("send prompt", text);
     const prompt = makePrompt(text);
     const result = await sendToOpenAI(prompt, setIsLoading);
@@ -78,6 +111,7 @@ const Article: React.FC = () => {
     let evaluationText = <></>;
     if (isCorrect) {
         evaluationText = <><hr/><p>{answer}: <span style={{"color":"green"}}> Correct</span></p><hr/></>;
+        sendPromptAndProcessResponse(readText());
     } else {
         const response = await makeEvaluationPrompt(answer, false, summary);
         const { reason } = response;
@@ -85,9 +119,9 @@ const Article: React.FC = () => {
             <><hr/><p>{answer}: 
                 <span style={{"color":"red"}}> Incorrect</span>
             </p><p>{reason}</p><hr/></>;
+        sendPromptAndProcessResponse(askQuestion(summary), summary);
     }
     setConversation(prevConversation => [...prevConversation, evaluationText]);
-    if (!isCorrect) sendPromptAndProcessResponse(askQuestion(summary), summary);
   }
 
   const makeEvaluationPrompt = (answer: string, isCorrect: boolean, context: string) => {
