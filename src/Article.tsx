@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, ChangeEvent, KeyboardEvent, ReactEl
 import ArticlePresentation from './ArticlePresentation';
 import { sendToOpenAI } from './openAI';
 import { makePrompt, askQuestion, multipleChoiceAnswer, makeTitlePrompt } from './prompts';
+import ToggleComponent from './Toggle';
 
 interface ArticleProps {
     text: string;
@@ -45,6 +46,11 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
     let charCount = 0;
     let newPosition = textPosition.current;
 
+    if (paragraphs[newPosition].length > 1000) {
+        alert("This article cannot be processed (for now). Please add newlines to split up long paragraphs.");
+        return "";
+    }
+
     while (charCount < 1000 && newPosition < paragraphs.length) {
       charCount += paragraphs[newPosition].length;
       newPosition += 1;
@@ -80,11 +86,11 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
     const result = await sendToOpenAI(prompt, setIsLoading);
     setIsLoading(false);
     const message = JSON.parse(result);
-    const processedResponse = processResponse(message, context);
+    const processedResponse = processResponse(message, context, isSummarizing ? text : null);
     setConversation(prevConversation => [...prevConversation, processedResponse]);
   };
 
-  const processResponse = (response: QuestionResponse, context: string | null = null) => {
+  const processResponse = (response: QuestionResponse, context: string | null = null, text: string | null = null) => {
     const { summary, questionType, trueStatement, falseStatements } = response;
   
     const summaryList = summary ? summary.map((point, index) => <li key={index}>{point}</li>) : <></>;
@@ -110,7 +116,7 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
   
     return (
       <>
-        <ul>{summaryList}</ul>
+        <ToggleComponent original={text ?? "There was an error displaying the text."} summary={<ul>{summaryList}</ul>} />
         <div className='question'>
             <p>Select the true statement:</p>
             {questionType === 'multiple' && <ol type="a">{optionsList}</ol>}
