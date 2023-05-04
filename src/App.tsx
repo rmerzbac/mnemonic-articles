@@ -32,10 +32,10 @@ const Home: React.FC<HomeProps> = ({ setInputText }) => {
           className='text-submission'
           value={inputText}
           onChange={handleChange}
-          placeholder="Enter text here"
+          placeholder="Paste article here"
         />
         <br/>
-        <button type="submit">Create article</button>
+        <button type="submit">Create mnemonic article</button>
       </form>
       <button onClick={() => setInputTextLocal(defaultText)}>Load default article (an excerpt from the Wikipedia article on the Battle of Cannae)</button>
     </div>
