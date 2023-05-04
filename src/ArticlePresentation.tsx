@@ -1,4 +1,5 @@
 import React, { ReactElement } from 'react';
+import HomeIcon from './HomeIcon';
 
 import loadingGif from './loading.gif';
 
@@ -20,22 +21,26 @@ const ArticlePresentation: React.FC<ArticlePresentationProps> = ({
   handleSubmit,
 }) => {
   return (
-    <div className="openai-chat">
-      <h1 className="title">{titleText}</h1>
-      <div className="conversation">
-        {conversation.map((line, index) => (
-          <React.Fragment key={index}>{line}</React.Fragment>
-        ))}
-        {isLoading && <img id="loading" src={loadingGif} alt="Loading..." />}
-      </div>
-      <textarea
-        hidden
-        required
-        placeholder="Type your message here..."
-        value={inputText}
-        onChange={handleInputChange}
-        onKeyDown={handleSubmit}
-      />
+    <div>
+        <HomeIcon />
+        <div className="body">
+        
+        <h1 className="title">{titleText}</h1>
+        <div className="conversation">
+            {conversation.map((line, index) => (
+            <React.Fragment key={index}>{line}</React.Fragment>
+            ))}
+            {isLoading && <img id="loading" src={loadingGif} alt="Loading..." />}
+        </div>
+        <textarea
+            hidden
+            required
+            placeholder="Type your message here..."
+            value={inputText}
+            onChange={handleInputChange}
+            onKeyDown={handleSubmit}
+        />
+        </div>
     </div>
   );
 };

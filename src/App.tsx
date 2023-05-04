@@ -23,8 +23,9 @@ const Home: React.FC<HomeProps> = ({ setInputText }) => {
   };
 
   return (
-    <div>
-      <h1>Mnemonic Article Generator</h1>
+    <div className='body'>
+      <h1>Mnemonic Article Generator<span style={{"color" : "#b0b0b0"}}>|ALPHA</span></h1>
+      <h2>By Reid Merzbacher • Powered by OpenAI</h2>
       <form onSubmit={handleSubmit}>
         <textarea
           required
@@ -46,12 +47,10 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="body">
-        <Routes>
-          <Route path="/" element={<Home setInputText={setInputText} />} />
-          <Route path="/article" element={<Article text={inputText} />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Home setInputText={setInputText} />} />
+        <Route path="/article" element={<Article text={inputText} />} />
+      </Routes>
     </Router>
   );
 };
