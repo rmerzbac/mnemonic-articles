@@ -2,6 +2,13 @@ import React from "react";
 
 // const demoText = "The Battle of Cannae (/ˈkæni, -eɪ, -aɪ/;[b] Latin: [ˈkanːae̯]) was a key engagement of the Second Punic War between the Roman Republic and Carthage, fought on 2 August 216 BC near the ancient village of Cannae in Apulia, southeast Italy. The Carthaginians and their allies, led by Hannibal, surrounded and practically annihilated a larger Roman and Italian army under the consuls Lucius Aemilius Paullus and Gaius Terentius Varro. It is regarded as one of the greatest tactical feats in military history and one of the worst defeats in Roman history.\n";
 
+export function makeTitlePrompt(text: string) {
+    return "Based on this text, come up with a simple title. \n\
+    Respond in the form \n\
+    {\"title\": \"<your title>\"}\
+    \n\n" + text;
+}
+
 type PromptListType = {
     [key: number]: string;
 };
@@ -32,21 +39,21 @@ const questionOptions: PromptListType = {
     2: "multiple choice"
 }
 
-export function defaultPrompt(text : string) {
+export function defaultPrompt(text : string, isSummarizing : boolean) {
     // const randomNum = Math.floor(Math.random() * 3);
     
     // Add other options
-    return "Summarize this text thoroughly in bullet points. \
-    Generate three false statements about the text and one true statement. \
+    return (isSummarizing && "Summarize this text thoroughly in bullet points. ") +
+    "Generate three false statements about the text and one true statement. \
     Make sure the true statement is just as terse as the false statements.\n\
     Respond in the form \n\
-    {\"summary\": [<\"your bullet points\">], \"questionType\": \"multiple\", \"trueStatement\":\"<true statement>\",\"falseStatements\":[<\"false statements\">] }\
+    {" + (isSummarizing && "\"summary\": [<\"your bullet points\">],") + "\"questionType\": \"multiple\", \"trueStatement\":\"<true statement>\",\"falseStatements\":[<\"false statements\">] }\
     \n\n" + text;
 }
 
-export const makePrompt = (text: string) => {
+export const makePrompt = (text: string, isSummarizing : boolean) => {
     // will add more prompts
-    const prompt = defaultPrompt(text);
+    const prompt = defaultPrompt(text, isSummarizing);
     return prompt;
 };
 

@@ -27,11 +27,9 @@ export const sendToOpenAI = async (
 
     const messageJSON = response.data.choices[0].message.content.trim();
     console.log(messageJSON);
-    setIsLoading(false);
     return messageJSON;
   } catch (error) {
     console.error('Error in API request:', error);
-    setIsLoading(false);
     return "";
   }
 };

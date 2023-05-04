@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, ChangeEvent, KeyboardEvent, ReactEl
 
 import ArticlePresentation from './ArticlePresentation';
 import { sendToOpenAI } from './openAI';
-import { makePrompt, askQuestion, multipleChoiceAnswer } from './prompts';
+import { makePrompt, askQuestion, multipleChoiceAnswer, makeTitlePrompt } from './prompts';
 
 interface ArticleProps {
     text: string;
@@ -29,6 +29,7 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
   const paragraphs = text.split('\n');
 
   const [inputText, setInputText] = useState<string>('');
+  const [titleText, setTitleText] = useState<string>('');
   const [conversation, setConversation] = useState<ReactElement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const textPosition = useRef(0);
@@ -51,7 +52,7 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
 
     const newText = paragraphs.slice(textPosition.current, newPosition).join('\n');
     textPosition.current = newPosition;
-    console.log("Updated textPosition:", newPosition); // Add this line
+    console.log("Updated textPosition:", newPosition);
     return newText;
   };
 
@@ -63,10 +64,21 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
     }
   }, [textPosition, triggerReadText]);
 
-  const sendPromptAndProcessResponse = async (text: string, context: string | null = null) => {
-    console.log("send prompt", text);
-    const prompt = makePrompt(text);
+  useEffect(() => {
+    const setTitle = async () => {
+        const prompt = makeTitlePrompt(text.substring(0, 500));
+        const result = await sendToOpenAI(prompt, setIsLoading);
+        const message = JSON.parse(result);
+        const {title} = message;
+        setTitleText(title);
+    }
+    setTitle();
+  },[])
+
+  const sendPromptAndProcessResponse = async (text: string, context: string | null = null, isSummarizing: boolean = true) => {
+    const prompt = makePrompt(text, isSummarizing);
     const result = await sendToOpenAI(prompt, setIsLoading);
+    setIsLoading(false);
     const message = JSON.parse(result);
     const processedResponse = processResponse(message, context);
     setConversation(prevConversation => [...prevConversation, processedResponse]);
@@ -76,7 +88,6 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
     const { summary, questionType, trueStatement, falseStatements } = response;
   
     const summaryList = summary ? summary.map((point, index) => <li key={index}>{point}</li>) : <></>;
-    console.log("process", summary + "");
   
     // Combine trueStatement and falseStatements
     const allStatements = [trueStatement, ...falseStatements];
@@ -100,26 +111,29 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
     return (
       <>
         <ul>{summaryList}</ul>
-        <p>Select the true statement:</p>
-        {questionType === 'multiple' && <ol type="a">{optionsList}</ol>}
+        <div className='question'>
+            <p>Select the true statement:</p>
+            {questionType === 'multiple' && <ol type="a">{optionsList}</ol>}
+        </div>
       </>
     );
   };
 
   const evaluateMultipleChoiceAnswer = async (answer: string, isCorrect: boolean, summary: string) => {
     console.log("eval", summary);
+    setConversation((prevState) => replaceButtonsWithDivs(prevState) as ReactElement[]);
     let evaluationText = <></>;
     if (isCorrect) {
-        evaluationText = <><hr/><p>{answer}: <span style={{"color":"green"}}> Correct</span></p><hr/></>;
+        evaluationText = <><div className='answer'><p>{answer}: <span style={{"color":"green"}}> Correct</span></p></div></>;
         sendPromptAndProcessResponse(readText());
     } else {
         const response = await makeEvaluationPrompt(answer, false, summary);
         const { reason } = response;
         evaluationText = 
-            <><hr/><p>{answer}: 
+            <><div className='answer'><p>{answer}: 
                 <span style={{"color":"red"}}> Incorrect</span>
-            </p><p>{reason}</p><hr/></>;
-        sendPromptAndProcessResponse(askQuestion(summary), summary);
+            </p><p>{reason}</p></div></>;
+        sendPromptAndProcessResponse(askQuestion(summary), summary, false);
     }
     setConversation(prevConversation => [...prevConversation, evaluationText]);
   }
@@ -142,16 +156,40 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
 
   const requestEvaluation = async (prompt: string) : Promise<EvaluationResponse> => {
     const response = await sendToOpenAI(prompt, setIsLoading);
+    setIsLoading(false);
     const message = JSON.parse(response);
     console.log(message);
     return message;
   };
+
+  type ReactElementOrArray = ReactElement | ReactElement[];
+
+  const replaceButtonsWithDivs = (element: ReactElementOrArray): ReactElementOrArray => {
+    if (Array.isArray(element)) {
+        return element.map((child) => replaceButtonsWithDivs(child)) as ReactElement[];
+    } else {
+        const typedElement = element as ReactElement;
+
+        if (typedElement.type === 'button') {
+        return <div {...typedElement.props}>{typedElement.props.children}</div>;
+        }
+
+        if (typedElement.props && typedElement.props.children) {
+            const updatedChildren = replaceButtonsWithDivs(typedElement.props.children);
+            return React.cloneElement(typedElement, typedElement.props, updatedChildren);
+        }
+    }
+
+    return element;
+  };
+  
 
   return (
     <ArticlePresentation
       conversation={conversation}
       isLoading={isLoading}
       inputText={inputText}
+      titleText={titleText}
       handleInputChange={handleInputChange}
       handleSubmit={handleSubmit}
     />

@@ -1,5 +1,6 @@
 import React from 'react';
 import Article from './Article';
+import './App.css';
 
 const demoTextFull = "The Battle of Cannae (/ˈkæni, -eɪ, -aɪ/;[b] Latin: [ˈkanːae̯]) was a key engagement of the Second Punic War between the Roman Republic and Carthage, fought on 2 August 216 BC near the ancient village of Cannae in Apulia, southeast Italy. The Carthaginians and their allies, led by Hannibal, surrounded and practically annihilated a larger Roman and Italian army under the consuls Lucius Aemilius Paullus and Gaius Terentius Varro. It is regarded as one of the greatest tactical feats in military history and one of the worst defeats in Roman history.\n\
     Having recovered from their losses at Trebia (218 BC) and Lake Trasimene (217 BC), the Romans decided to engage Hannibal at Cannae, with approximately 86,000 Roman and allied troops. They massed their heavy infantry in a deeper formation than usual, while Hannibal used the double envelopment tactic and surrounded his enemy, trapping the majority of the Roman army, who were then slaughtered. The loss of life on the Roman side meant it was one of the most lethal single days of fighting in history; Adrian Goldsworthy equates the death toll at Cannae to \"the massed slaughter of the British Army on the first day of the Somme offensive in 1916\".[3] Only about 15,000 Romans, most of whom were from the garrisons of the camps and had not taken part in the battle, escaped death. Following the defeat, Capua and several other Italian city-states defected from the Roman Republic to Carthage.\n\
@@ -16,8 +17,7 @@ const demoTextFull = "The Battle of Cannae (/ˈkæni, -eɪ, -aɪ/;[b] Latin: [ˈ
 
 const App: React.FC = () => {
   return (
-    <div className="App">
-      <h1>Mnemonic Article Generator</h1>
+    <div className="body">
       <Article text={demoTextFull}/>
     </div>
   );

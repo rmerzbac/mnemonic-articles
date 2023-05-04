@@ -6,6 +6,7 @@ interface ArticlePresentationProps {
   conversation: ReactElement[];
   isLoading: boolean;
   inputText: string;
+  titleText: string;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSubmit: (e: React.KeyboardEvent<HTMLTextAreaElement>) => Promise<void>;
 }
@@ -14,16 +15,18 @@ const ArticlePresentation: React.FC<ArticlePresentationProps> = ({
   conversation,
   isLoading,
   inputText,
+  titleText,
   handleInputChange,
   handleSubmit,
 }) => {
   return (
     <div className="openai-chat">
+      <h1 className="title">{titleText}</h1>
       <div className="conversation">
         {conversation.map((line, index) => (
           <React.Fragment key={index}>{line}</React.Fragment>
         ))}
-        {isLoading && <img src={loadingGif} alt="Loading..." />}
+        {isLoading && <img id="loading" src={loadingGif} alt="Loading..." />}
       </div>
       <textarea
         hidden
