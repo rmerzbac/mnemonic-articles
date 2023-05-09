@@ -43,7 +43,8 @@ export function defaultPrompt(text : string, isSummarizing : boolean) {
     // const randomNum = Math.floor(Math.random() * 3);
     
     // Add other options
-    return (isSummarizing && "Summarize this text thoroughly in bullet points. ") +
+    return (isSummarizing && "Summarize this text thoroughly in bullet points. \
+    Include all relevant information, including dates, locations, and names.") +
     "Generate three false statements about the text and one true statement. \
     Make sure the true statement is just as terse as the false statements.\n\
     Respond in the form \n\

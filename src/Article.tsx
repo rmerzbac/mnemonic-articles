@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, ChangeEvent, KeyboardEvent, ReactElement } from 'react';
 
 import ArticlePresentation from './ArticlePresentation';
-import { sendToOpenAI } from './openAI';
+import { sendToOpenAI, parseJSON } from './openAI';
 import { makePrompt, askQuestion, multipleChoiceAnswer, makeTitlePrompt } from './prompts';
 import ToggleComponent from './Toggle';
 
@@ -74,7 +74,7 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
     const setTitle = async () => {
         const prompt = makeTitlePrompt(text.substring(0, 500));
         const result = await sendToOpenAI(prompt, setIsLoading);
-        const message = JSON.parse(result);
+        const message = parseJSON(result);
         const {title} = message;
         setTitleText(title);
     }
@@ -85,13 +85,15 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
     const prompt = makePrompt(text, isSummarizing);
     const result = await sendToOpenAI(prompt, setIsLoading);
     setIsLoading(false);
-    const message = JSON.parse(result);
+    const message = parseJSON(result);
     const processedResponse = processResponse(message, context, isSummarizing ? text : null);
     setConversation(prevConversation => [...prevConversation, processedResponse]);
   };
 
   const processResponse = (response: QuestionResponse, context: string | null = null, text: string | null = null) => {
     const { summary, questionType, trueStatement, falseStatements } = response;
+
+    console.log("response", response);
   
     const summaryList = summary ? summary.map((point, index) => <li key={index}>{point}</li>) : <></>;
   
@@ -116,7 +118,7 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
   
     return (
       <>
-        <ToggleComponent original={text ?? "There was an error displaying the text."} summary={<ul>{summaryList}</ul>} />
+        {text ? <ToggleComponent original={text} summary={<ul>{summaryList}</ul>}/>:<span></span> }
         <div className='question'>
             <p>Select the true statement:</p>
             {questionType === 'multiple' && <ol type="a">{optionsList}</ol>}
@@ -163,7 +165,7 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
   const requestEvaluation = async (prompt: string) : Promise<EvaluationResponse> => {
     const response = await sendToOpenAI(prompt, setIsLoading);
     setIsLoading(false);
-    const message = JSON.parse(response);
+    const message = parseJSON(response);
     console.log(message);
     return message;
   };
@@ -172,12 +174,12 @@ const Article: React.FC<ArticleProps> = ({ text }) => {
 
   const replaceButtonsWithDivs = (element: ReactElementOrArray): ReactElementOrArray => {
     if (Array.isArray(element)) {
-        return element.map((child) => replaceButtonsWithDivs(child)) as ReactElement[];
+      return element.map((child) => replaceButtonsWithDivs(child)) as ReactElement[];
     } else {
         const typedElement = element as ReactElement;
 
         if (typedElement.type === 'button') {
-        return <div {...typedElement.props}>{typedElement.props.children}</div>;
+          return <div {...typedElement.props}>{typedElement.props.children}</div>;
         }
 
         if (typedElement.props && typedElement.props.children) {

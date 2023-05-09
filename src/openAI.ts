@@ -33,3 +33,16 @@ export const sendToOpenAI = async (
     return "";
   }
 };
+
+export const parseJSON = (message: string, triesRemaining: number = 4) : any=> {
+  console.log("Parsing", message);
+  if (triesRemaining <= 0) return "";
+  try {
+    const json = JSON.parse(message);
+    console.log("json", json);
+    return json;
+  } catch (error) {
+    console.error('Error parsing JSON', error);
+    return parseJSON(message, triesRemaining - 1);
+  }
+}

@@ -25,7 +25,7 @@ const ArticlePresentation: React.FC<ArticlePresentationProps> = ({
         <HomeIcon />
         <div className="body">
         
-        <h1 className="title">{titleText}</h1>
+        <h1 className="title">{titleText}<span style={{"color" : "#b0b0b0"}}>|ALPHA</span></h1>
         <div className="conversation">
             {conversation.map((line, index) => (
             <React.Fragment key={index}>{line}</React.Fragment>
